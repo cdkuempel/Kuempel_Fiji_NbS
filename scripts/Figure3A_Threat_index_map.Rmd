@@ -1,0 +1,60 @@
+---
+title: "Untitled"
+author: "Caitie"
+date: "2025-07-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(sf)
+library(here)
+library(ggplot2)
+library(tmap)
+```
+ # priority basins
+ 
+ Update this once we have new priority basins
+```{r}
+poi<-read_csv(here("input_data/Top_threat_areas.csv"))
+poi_sel<-poi %>%
+  filter(bi_class %in% c("3-3", "3-2"))
+```
+For threat index rescaled to priority provinces only
+```{r}
+dat<-st_read(here("input_data/TotalIndex_sel1.shp")) %>% 
+  mutate(poi = ifelse(uniq_id2 %in% poi$uniq_id2, 1, 0)) %>%
+  dplyr::select(ADM2_NA, ADM3_NA, Ctchm_1, uniq_id2, Th_A, poi) %>% 
+  distinct(.) %>%
+  filter(ADM2_NA %in% c("Ba", "Ra", "Bua", "Macuata")) %>% 
+  filter(!Ctchm_1 == "Cikobia Island")
+ # mutate(Index = ifelse(ADM2_NA %in% c("Ba", "Ra", "Bua", "Macuata"), Th_A, 0))
+```
+
+
+
+```{r}
+sub<-dat %>%
+  filter(uniq_id2 %in% poi_sel$uniq_id2)
+```
+
+
+
+```{r}
+threat_map<-tm_shape(dat) +
+  tm_polygons("Th_A", style = "cont", title = "Threat Index", palette = "viridis") +
+  tm_shape(sub) +
+  tm_borders(col = "black", lwd = 2) +
+  tm_layout(frame = FALSE) +
+  tm_compass(position = c("left", "bottom"))+
+  tm_scale_bar()
+
+threat_map
+```
+```{r}
+tmap_save(threat_map, here("figures/Fig3A_Threat_index_map.png"))
+```
+

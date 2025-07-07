@@ -1,0 +1,77 @@
+---
+title: "Untitled"
+author: "Caitie"
+date: "2025-07-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(here)
+library(tidyverse)
+```
+
+Figure 2 results
+
+All Fiji bivariate
+
+x = Threats
+y = Climate vulnerability
+
+```{r}
+fiji_df<-read_csv(here("input_data/All_fiji_bi_class.csv"))
+```
+Top threats
+```{r}
+threats<-fiji_df %>% 
+  filter(bi_class %in% c("3-3", "3-2", "3-1"))
+```
+
+```{r}
+table(threats$ADM2_NA_x)
+```
+```{r}
+threats2<-fiji_df %>% 
+  filter(bi_class %in% c("3-3", "3-2"))
+```
+
+```{r}
+table(threats2$ADM2_NA_x)
+```
+
+```{r}
+nrow(threats2)
+33/nrow(threats2)
+30/nrow(threats2)
+24/nrow(threats2)
+5/nrow(threats2)
+```
+
+
+
+Selected areas bivariate
+
+```{r}
+poi_df<-read_csv(here("input_data/Top_threat_areas.csv"))
+```
+
+```{r}
+table(poi_df$ADM2_NA)
+```
+
+```{r}
+sub_poi<-poi_df %>%
+   filter(bi_class %in% c("3-3", "3-2"))
+```
+
+```{r}
+table(sub_poi$ADM2_NA)
+```
+
+Figure 3 results
+
+
+Figure 4 results

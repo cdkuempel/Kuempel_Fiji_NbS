@@ -1,0 +1,162 @@
+---
+title: "Index_heatmap"
+author: "Caitie"
+date: "2025-06-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(here)
+library(viridis)
+library(sf)
+```
+
+
+# Threat index
+
+Themes: climate index
+n_ag_A: Agricultural area
+n_agc_A: Agricultural census
+n_df_A: Deforestation
+n_f_Ar: Forestry
+n_ls_Ar: Landslides
+n_liv_Ar: Livestock
+n_mn_Ar: Mining
+n_tN_Ar: Nitrogen
+n_sed_Ar: Sediment
+n_Up_A: Urban population
+n_fsh: Fisheries
+n_ma_avg_A: Mangroves
+Th_A: Average of the above
+Tot_A: Average of Th_A and Themes
+
+For index rescaled to priority provinces bordering GSR only
+
+```{r}
+threat<-read.csv(here("input_data/TotalIndex_sel1.csv")) %>% 
+  filter(ADM2_NA %in% c("Ba", "Ra", "Bua", "Macuata"))
+
+
+sub_threat<-threat %>%
+  select(ADM2_NA, ADM3_NA, Ctchm_1, n_ag_Ar:n_ma_avg_A) 
+
+sub_threat2<-sub_threat %>%
+  pivot_longer(cols = n_ag_Ar:n_ma_avg_A, 
+               names_to = "Pressure", 
+               values_to = "Intensity") %>% 
+  mutate(label = ifelse(Pressure == "n_ag_Ar", "Agricultural area (km2)",
+                        ifelse(Pressure == "n_agc_A", "Agricultural census",
+                        ifelse(Pressure == "n_df_A", "Deforestation",
+                        ifelse(Pressure == "n_f_Ar", "Forestry",
+                        ifelse(Pressure == "n_ls_Ar", "Landslides",
+                        ifelse(Pressure == "n_liv_Ar", "Livestock",
+                        ifelse(Pressure == "n_mn_Ar", "Mining",
+                        ifelse(Pressure == "n_tN_Ar", "Nitrogen (human wastewater)",
+                        ifelse(Pressure == "n_sed_Ar", "Sediment",
+                        ifelse(Pressure == "n_Up_A", "Urban population",
+                        ifelse(Pressure == "n_fsh", "Fisheries",
+                        ifelse(Pressure == "n_ma_avg_A", "Mangrove area (km2)", NA)))))))))))))
+```
+
+
+
+```{r}
+
+all_plot2<-ggplot(sub_threat2, aes(y=Ctchm_1, x = factor(label, levels = sort(unique(label), decreasing = T)), fill= Intensity)) + 
+  geom_tile() +
+  theme_bw() +
+  scale_fill_viridis(option = "D") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_fill_viridis_c(#trans = "log10",  # Apply log10 transformation to fill
+                       option = "D",
+                       na.value = "grey50") +     # Choose a viridis option (A, B, C, D))
+    labs(x = "Pressure",
+        y = "Tikina",
+       fill = "Intensity") +
+  facet_wrap(~ADM2_NA, scales = "free_y", ncol = 2, axes = "margins", axis.labels = "margins")
+
+all_plot2
+```
+```{r}
+ggsave(here("figures/Threat_index_heatmap_square.png"), width = 10, height = 10)
+```
+
+ # priority basins
+```{r}
+poi<-st_read(here("input_data/PriorityAreas_withinProv_33perc_unique1.shp")) %>% 
+  mutate(test = sub("_.*", "", uniq_d2))# 
+```
+
+```{r}
+
+sub_threat3<-sub_threat2 %>%
+  filter(Ctchm_1 %in% poi$test)
+
+```
+
+```{r}
+
+all_plot2_poi<-ggplot(sub_threat3, aes(y=Ctchm_1, x = factor(label, levels = sort(unique(label), decreasing = T)), fill= Intensity)) + 
+  geom_tile() +
+  theme_bw() +
+  scale_fill_viridis(option = "D") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_fill_viridis_c(#trans = "log10",  # Apply log10 transformation to fill
+                       option = "D",
+                       na.value = "grey50") +     # Choose a viridis option (A, B, C, D))
+    labs(x = "Pressure",
+        y = "Tikina",
+       fill = "Intensity") +
+  facet_wrap(~ADM2_NA, scales = "free_y", ncol = 2, axes = "margins", axis.labels = "margins")
+
+all_plot2_poi
+```
+```{r}
+ggsave(here("figures/Threat_index_heatmap_square_poi.png"), width = 10, height = 10)
+```
+
+```{r}
+which(unique(poi$test) %in% unique(sub_threat3$Ctchm_1))
+```
+
+
+# Climate index
+
+```{r}
+dat<-read_csv(here("raw_data/Inform_risk_Fiji.csv"))
+
+sub_dat<-dat %>%
+  filter(ADM3_NAME %in% c("Ba", "Ra", "Bua", "Macuata")) %>%
+  select(-"Total_Population", -"Households",-"THEME1",-"THEME2",-"THEME3", -"THEMES", -"INFORM_risk", -"RISK_class",
+         -"Inequality_Index") %>% 
+  mutate(Aid_Dependency  = as.numeric(Aid_Dependency))
+
+sub_dat2<-sub_dat %>%
+  pivot_longer(cols = Riverine_flood:Lack_of_coping_capacity, 
+               names_to = "Factor", 
+               values_to = "Vulnerability")
+```
+
+```{r}
+ggplot(sub_dat2, aes(y=ADM3_NAME, x = factor(Factor, levels = sort(unique(Factor), decreasing = T)), fill= Vulnerability)) + 
+  geom_tile() +
+  theme_bw() +
+  scale_fill_viridis(option = "D") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_fill_viridis_c(trans = "log10",  # Apply log10 transformation to fill
+                       option = "D",
+                       na.value = "grey50") +     # Choose a viridis option (A, B, C, D))
+    labs(x = "Vulnerability variable",
+       y = "Tikina",
+       fill = "Vulnerability") 
+```
+```{r}
+ggsave(here("figures/INFORM_heatmap.png"), width = 7, height = 5)
+```
+
